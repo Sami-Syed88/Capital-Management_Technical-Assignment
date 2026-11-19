@@ -1,0 +1,54 @@
+table Security_UserCountry
+	isHidden
+	lineageTag: 30fed965-e00e-4587-b8c5-8dc36b4074be
+
+	column UserEmail
+		dataType: string
+		isHidden
+		lineageTag: 9c3e058d-5420-45a9-9ee6-f220332d5796
+		summarizeBy: none
+		sourceColumn: UserEmail
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column CountryCode
+		dataType: string
+		isHidden
+		lineageTag: 9aebcc57-6e35-456a-9328-48068eafde91
+		summarizeBy: none
+		sourceColumn: CountryCode
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Security_UserCountry = m
+		mode: import
+		queryGroup: 03_Reporting_Model
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\samis\Downloads\Nordea\Security_UserCountry.csv"),[Delimiter=",", Columns=2, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}, {"Column2", type text}}),
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"UserEmail", type text}, {"CountryCode", type text}}),
+				    // Removed unnecessary spaces
+				    #"Trimmed Text" = Table.TransformColumns(#"Changed Type1",{{"UserEmail", Text.Trim, type text}}),
+				    // Standardized email addresses
+				    #"Lowercased Text" = Table.TransformColumns(#"Trimmed Text",{{"UserEmail", Text.Lower, type text}}),
+				    // Standardized country codes
+				    #"Trimmed Text1" = Table.TransformColumns(#"Lowercased Text",{{"CountryCode", Text.Trim, type text}}),
+				    // Ensured consistent country codes
+				    #"Uppercased Text" = Table.TransformColumns(#"Trimmed Text1",{{"CountryCode", Text.Upper, type text}}),
+				    // To temove duplicate user-country mappings, if any.
+				    #"Removed Duplicates" = Table.Distinct(#"Uppercased Text")
+				in
+				    #"Removed Duplicates"
+
+	changedProperty = IsHidden
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

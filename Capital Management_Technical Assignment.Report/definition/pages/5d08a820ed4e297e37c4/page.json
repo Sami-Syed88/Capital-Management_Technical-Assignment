@@ -1,0 +1,8 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "5d08a820ed4e297e37c4",
+  "displayName": "Actual vs Budget and DQ ",
+  "displayOption": "FitToPage",
+  "height": 1180,
+  "width": 1920
+}

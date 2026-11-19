@@ -1,0 +1,152 @@
+table Fact_Exposure
+	lineageTag: dde2f530-4702-4d0f-a738-fec057449c59
+
+	measure 'DQ Status Highlight' =
+			
+			IF(
+			    SELECTEDVALUE(Fact_Exposure[DQ_Status]) = "Missing RWA",
+			    "#FFCCCC",
+			    "#FFFFFF"
+			)
+		lineageTag: cc9da34d-f63b-4bb0-bd28-f16f2e7f90a3
+
+	column ExposureID
+		dataType: string
+		lineageTag: dd88bbd2-8f28-4b60-9fc2-7511523c10c9
+		summarizeBy: none
+		sourceColumn: ExposureID
+
+		annotation SummarizationSetBy = Automatic
+
+	column ReportMonth
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 0243d1d9-6046-4381-8ec2-48d34a9584b4
+		summarizeBy: none
+		sourceColumn: ReportMonth
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column CounterpartyID
+		dataType: string
+		isHidden
+		lineageTag: 42317132-c0eb-4c14-9917-1c93fc418be2
+		summarizeBy: none
+		sourceColumn: CounterpartyID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column CountryCode
+		dataType: string
+		isHidden
+		lineageTag: e83eb460-2afd-40d7-961f-914d5b2814a4
+		summarizeBy: none
+		sourceColumn: CountryCode
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column SegmentCode
+		dataType: string
+		isHidden
+		lineageTag: 32ebfdc3-6e7c-449f-95cf-3ee745f51af0
+		summarizeBy: none
+		sourceColumn: SegmentCode
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Currency
+		dataType: string
+		lineageTag: ae292663-2395-4d9d-8f7b-8e92319c0cba
+		summarizeBy: none
+		sourceColumn: Currency
+
+		annotation SummarizationSetBy = Automatic
+
+	column ExposureEUR
+		dataType: decimal
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		lineageTag: 8cc13ded-3073-4487-885d-d62b327c7c4d
+		summarizeBy: sum
+		sourceColumn: ExposureEUR
+
+		annotation SummarizationSetBy = Automatic
+
+	column RWA
+		dataType: decimal
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		lineageTag: 4ead92db-ec33-4d83-a8de-f68470604e2d
+		summarizeBy: sum
+		sourceColumn: RWA
+
+		annotation SummarizationSetBy = Automatic
+
+	column CapitalRequirement
+		dataType: decimal
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		lineageTag: cfc685ee-a3b7-4302-85f3-9fdda4a2e51e
+		summarizeBy: sum
+		sourceColumn: CapitalRequirement
+
+		annotation SummarizationSetBy = Automatic
+
+	column ScenarioCode
+		dataType: string
+		isHidden
+		lineageTag: c1dc77fa-38ff-4885-a678-b4c5c1740b7d
+		summarizeBy: none
+		sourceColumn: ScenarioCode
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column DQ_Status
+		dataType: string
+		lineageTag: 2589c32f-0c59-48da-b268-034f3386da1a
+		summarizeBy: none
+		sourceColumn: DQ_Status
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Fact_Exposure = m
+		mode: import
+		queryGroup: 03_Reporting_Model
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\samis\Downloads\Nordea\Fact_Exposure.csv"),[Delimiter=",", Columns=10, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"ExposureID", type text}, {"ReportMonth", type date}, {"CounterpartyID", type text}, {"CountryCode", type text}, {"SegmentCode", type text}, {"Currency", type text}, {"ExposureEUR", Int64.Type}, {"RWA", Int64.Type}, {"CapitalRequirement", Int64.Type}, {"ScenarioCode", type text}}),
+				    #"Trimmed Text" = Table.TransformColumns(#"Changed Type",{{"ExposureID", Text.Trim, type text}, {"CounterpartyID", Text.Trim, type text}, {"CountryCode", Text.Trim, type text}, {"SegmentCode", Text.Trim, type text}, {"Currency", Text.Trim, type text}, {"ScenarioCode", Text.Trim, type text}}),
+				    #"Uppercased Text" = Table.TransformColumns(#"Trimmed Text",{{"ExposureID", Text.Upper, type text}, {"CounterpartyID", Text.Upper, type text}, {"CountryCode", Text.Upper, type text}, {"Currency", Text.Upper, type text}, {"SegmentCode", Text.Upper, type text}}),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Uppercased Text",{{"ExposureEUR", type text}}),
+				    Remove_Exposure_Thousands_Separators = Table.ReplaceValue(#"Changed Type1",",","",Replacer.ReplaceText,{"ExposureEUR"}),
+				    #"Changed Type2" = Table.TransformColumnTypes(Remove_Exposure_Thousands_Separators,{{"ExposureEUR", Currency.Type}, {"RWA", Currency.Type}, {"CapitalRequirement", Currency.Type}, {"ReportMonth", type date}}),
+				    // Removed duplicate exposure records based on ExposureID to prevent double counting in financial reporting.
+				    Remove_Duplicate_ExposureIDs = Table.Distinct(#"Changed Type2", {"ExposureID"}),
+				    // Checks ExposureEUR, RWA, and CapitalRequirement for null values and flags all missing fields.
+				    #"Added DQ_status" = Table.AddColumn(Remove_Duplicate_ExposureIDs, "DQ_Status", each let
+				            Issues = List.RemoveNulls({
+				                if [ExposureEUR] = null then "Missing Exposure" else null,
+				                if [RWA] = null then "Missing RWA" else null,
+				                if [CapitalRequirement] = null then "Missing Capital" else null
+				            })
+				        in
+				            if List.IsEmpty(Issues) then "OK"
+				            else Text.Combine(Issues, ", ")),
+				    #"Trimmed Text1" = Table.TransformColumns(#"Added DQ_status",{{"ExposureID", Text.Trim, type text}}),
+				    #"Changed Type3" = Table.TransformColumnTypes(#"Trimmed Text1",{{"DQ_Status", type text}})
+				in
+				    #"Changed Type3"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

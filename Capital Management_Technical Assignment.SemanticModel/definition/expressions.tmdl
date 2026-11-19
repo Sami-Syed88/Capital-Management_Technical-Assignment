@@ -1,0 +1,122 @@
+expression Fact_Exposure_Raw =
+		let
+		    Source = Csv.Document(File.Contents("C:\Users\samis\Downloads\Nordea\Fact_Exposure.csv"),[Delimiter=",", Columns=10, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+		    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"ExposureID", type text}, {"ReportMonth", type date}, {"CounterpartyID", type text}, {"CountryCode", type text}, {"SegmentCode", type text}, {"Currency", type text}, {"ExposureEUR", Int64.Type}, {"RWA", Int64.Type}, {"CapitalRequirement", Int64.Type}, {"ScenarioCode", type text}})
+		in
+		    #"Changed Type"
+	lineageTag: 762cbc04-9bfd-43a4-acb0-9e2ea8525958
+	queryGroup: 01_Raw_Data
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression DQ_01_DuplicateExposures =
+		let
+		    Source = Fact_Exposure_Raw,
+		    #"Grouped Rows" = Table.Group(Source, {"ExposureID"}, {{"RecordCount", each Table.RowCount(_), Int64.Type}}),
+		    #"Filtered Rows" = Table.SelectRows(#"Grouped Rows", each [RecordCount] > 1)
+		in
+		    #"Filtered Rows"
+	lineageTag: 725d73ff-7365-4e30-8b4e-fec15d1d4ab2
+	queryGroup: 02_Data_Quality_Validation
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression DQ_02_MissingFinancialValues =
+		let
+		    Source = Fact_Exposure_Raw,
+		    // Checks ExposureEUR, RWA, and CapitalRequirement for null values and flags all missing fields.
+		    Validate_Mandatory_Financial_Fields = Table.AddColumn(Source, "DQ_Missing_Status", each let
+		    Issues = List.RemoveNulls({
+		        if [ExposureEUR] = null then "Missing Exposure" else null,
+		        if [RWA] = null then "Missing RWA" else null,
+		        if [CapitalRequirement] = null then "Missing Capital" else null
+		    })
+		in
+		    if List.IsEmpty(Issues) then "OK"
+		    else Text.Combine(Issues, ", ")),
+		    #"Changed Type" = Table.TransformColumnTypes(Validate_Mandatory_Financial_Fields,{{"DQ_Missing_Status", type text}})
+		in
+		    #"Changed Type"
+	lineageTag: 7c0f23e3-237f-4ef9-8b54-738004a8c88b
+	queryGroup: 02_Data_Quality_Validation
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression DQ_03_UnknownCounterparties =
+		let
+		    Source = Fact_Exposure_Raw,
+		    // This step used to Identify fact_exposure records without matching counterparty master data using Left Anti Join.
+		    Check_Counterparty_References = Table.NestedJoin(Source, {"CounterpartyID"}, Dim_Counterparty_Raw, {"CounterpartyID"}, "Dim_Counterparty_Raw", JoinKind.LeftAnti),
+		    Remove_Merge_Result_Column = Table.RemoveColumns(Check_Counterparty_References,{"Dim_Counterparty_Raw"}),
+		    // To keep only relevant exposure identifiers and amounts for investigation
+		    #"Removed Other Columns" = Table.SelectColumns(Remove_Merge_Result_Column,{"ExposureID", "CounterpartyID", "ExposureEUR", "RWA", "CapitalRequirement"})
+		in
+		    #"Removed Other Columns"
+	lineageTag: 9d99c20c-c4d2-4558-862d-c3c251a1490d
+	queryGroup: 02_Data_Quality_Validation
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression Dim_Counterparty_Raw =
+		let
+		    Source = Csv.Document(
+		        File.Contents("C:\Users\samis\Downloads\Nordea\Dim_Counterparty.csv"),
+		        [Delimiter=",", Columns=4, Encoding=1252, QuoteStyle=QuoteStyle.None]
+		    ),
+		
+		    #"Changed Type" = Table.TransformColumnTypes(
+		        Source,
+		        {
+		            {"Column1", type text},
+		            {"Column2", type text},
+		            {"Column3", type text},
+		            {"Column4", type text}
+		        }
+		    ),
+		
+		    #"Promoted Headers" = Table.PromoteHeaders(
+		        #"Changed Type",
+		        [PromoteAllScalars=true]
+		    )
+		in
+		    #"Promoted Headers"
+	lineageTag: 4d4e3ca1-f94a-4eb0-989b-0c27de8b3b98
+	queryGroup: 01_Raw_Data
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
+expression DQ_04_CurrencyFormatting =
+		let
+		    Source = Fact_Exposure_Raw,
+		    #"Added custom Currency_Standardized" = Table.AddColumn(Source, "Currency_Standardized", each if [Currency] = null then
+		    null
+		else
+		    Text.Upper(Text.Trim([Currency]))),
+		    // This coloumn added to check the currency formatting issue
+		    #"Added custom DQ_Currency_Status" = Table.AddColumn(#"Added custom Currency_Standardized", "DQ_Currency_Status", each if [Currency] = [Currency_Standardized] then
+		    "OK"
+		else
+		    "Formatting Issue"),
+		    #"Changed Type" = Table.TransformColumnTypes(#"Added custom DQ_Currency_Status",{{"DQ_Currency_Status", type text}, {"Currency_Standardized", type text}}),
+		    // Retained only relevant fields for investigation.
+		    #"Removed Other Columns" = Table.SelectColumns(#"Changed Type",{"ExposureID", "Currency", "Currency_Standardized", "DQ_Currency_Status"})
+		in
+		    #"Removed Other Columns"
+	lineageTag: 3a5b71fe-f07a-4da9-812c-7a5aab5ddbb3
+	queryGroup: 02_Data_Quality_Validation
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

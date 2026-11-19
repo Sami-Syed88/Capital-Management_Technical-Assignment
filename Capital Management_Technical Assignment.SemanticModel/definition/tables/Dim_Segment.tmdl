@@ -1,0 +1,36 @@
+table Dim_Segment
+	lineageTag: e9f1c679-c4fe-41f1-8ca6-7c3830239a28
+
+	column SegmentCode
+		dataType: string
+		lineageTag: 9a4413d4-d745-46ae-b764-f46413f86813
+		summarizeBy: none
+		sourceColumn: SegmentCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column SegmentName
+		dataType: string
+		lineageTag: 578e6286-2fe8-4db8-a62e-3b15b4b4d67f
+		summarizeBy: none
+		sourceColumn: SegmentName
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_Segment = m
+		mode: import
+		queryGroup: 03_Reporting_Model
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\samis\Downloads\Nordea\Dim_Segment.csv"),[Delimiter=",", Columns=2, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"SegmentCode", type text}, {"SegmentName", type text}}),
+				    // removed whitespace from SegmentCode
+				    #"Trimmed Text" = Table.TransformColumns(#"Changed Type1",{{"SegmentCode", Text.Trim, type text}})
+				in
+				    #"Trimmed Text"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

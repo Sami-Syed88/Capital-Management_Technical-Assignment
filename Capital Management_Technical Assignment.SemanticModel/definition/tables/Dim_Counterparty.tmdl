@@ -1,0 +1,103 @@
+table Dim_Counterparty
+	lineageTag: 5bd7164a-bed1-4419-9a73-fc7856fc6c6a
+
+	measure 'Counterparty Highlight' =
+			
+			IF(
+			    SELECTEDVALUE(Dim_Counterparty[CounterpartyName])
+			        = "Unknown Counterparty",
+			    "#FFCCCC",
+			    "#FFFFFF"
+			)
+		lineageTag: 6950fc1b-5945-42cc-b281-f39e42aee5d7
+
+	column CounterpartyID
+		dataType: string
+		lineageTag: 99b4c2e1-4897-4937-afc5-af70a32cce4d
+		summarizeBy: none
+		sourceColumn: CounterpartyID
+
+		annotation SummarizationSetBy = Automatic
+
+	column CounterpartyName
+		dataType: string
+		lineageTag: 3e9459c0-ec19-481c-ab58-70d233884223
+		summarizeBy: none
+		sourceColumn: CounterpartyName
+
+		annotation SummarizationSetBy = Automatic
+
+	column CountryCode
+		dataType: string
+		lineageTag: 1639124e-4068-4a7e-aee2-32f698ab1681
+		summarizeBy: none
+		sourceColumn: CountryCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column InternalRating
+		dataType: string
+		lineageTag: dbff964b-ba40-4ff1-a73a-51d0b02c110b
+		summarizeBy: none
+		sourceColumn: InternalRating
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_Counterparty = m
+		mode: import
+		queryGroup: 03_Reporting_Model
+		source =
+				let
+				    Source = Csv.Document(
+				        File.Contents("C:\Users\samis\Downloads\Nordea\Dim_Counterparty.csv"),
+				        [Delimiter=",", Columns=4, Encoding=1252, QuoteStyle=QuoteStyle.None]
+				    ),
+				
+				    #"Changed Type" = Table.TransformColumnTypes(
+				        Source,
+				        {
+				            {"Column1", type text},
+				            {"Column2", type text},
+				            {"Column3", type text},
+				            {"Column4", type text}
+				        }
+				    ),
+				
+				    #"Promoted Headers" = Table.PromoteHeaders(
+				        #"Changed Type",
+				        [PromoteAllScalars=true]
+				    ),
+				
+				    #"Changed Type1" = Table.TransformColumnTypes(
+				        #"Promoted Headers",
+				        {
+				            {"CounterpartyID", type text},
+				            {"CounterpartyName", type text},
+				            {"CountryCode", type text},
+				            {"InternalRating", type text}
+				        }
+				    ),
+				
+				    // Add missing counterparty CP011
+				    #"Added Unknown Counterparty" = Table.InsertRows(
+				        #"Changed Type1",
+				        Table.RowCount(#"Changed Type1"),
+				        {
+				            [
+				                CounterpartyID = "CP011",
+				                CounterpartyName = "Unknown counterparty",
+				                CountryCode = "PL",
+				                InternalRating = "Unknown"
+				            ]
+				        }
+				    ),
+				    // standardized CounterpartyID and CountryCode
+				    #"Trimmed Text" = Table.TransformColumns(#"Added Unknown Counterparty",{{"CounterpartyID", Text.Trim, type text}, {"CountryCode", Text.Trim, type text}})
+				
+				in
+				    #"Trimmed Text"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,340 @@
+table _Measures
+	lineageTag: d117b820-4bbf-4099-a3da-fd10912326ce
+
+	measure 'Total RWA' =
+			
+			SUM(Fact_Exposure[RWA])
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		displayFolder: A. Base Measures
+		lineageTag: b43bf543-6ca4-4966-ad36-35aa03b08cb4
+
+	measure 'Total Exposure' =
+			
+			SUM(Fact_Exposure[ExposureEUR])
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		displayFolder: A. Base Measures
+		lineageTag: be68e8b2-c593-4727-b4fc-f57bf2be0675
+
+	measure 'RWA Density (%)' =
+			
+			DIVIDE(
+			    [Total RWA],
+			    [Total Exposure]
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: A. Base Measures
+		lineageTag: 7d7531dc-51d5-4d37-bbe3-e34d06b34560
+
+	measure 'Capital Requirement (%)' =
+			
+			DIVIDE(
+			    SUM(Fact_Exposure[CapitalRequirement]),
+			    [Total RWA]
+			)
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: A. Base Measures
+		lineageTag: 9184d0b3-eea0-483e-b805-6ddbd619c82a
+
+	measure 'Capital Requirement incl. Buffer' =
+			
+			SUM(Fact_Exposure[CapitalRequirement])
+			    + 0.025 * [Total RWA]
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		displayFolder: A. Base Measures
+		lineageTag: d428e760-c0cc-4d4f-84ea-24ad2e7e76c6
+
+	measure 'RWA Actual' =
+			
+			CALCULATE(
+			    [Total RWA],
+			    REMOVEFILTERS(Dim_Scenario),
+			    Dim_Scenario[ScenarioCode] = "Actual"
+			)
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		displayFolder: B. Actual vs Budget
+		lineageTag: b9346edd-6a9b-4456-b9ca-d96d855069d2
+
+	measure 'RWA Budget' =
+			
+			CALCULATE(
+			    [Total RWA],
+			    REMOVEFILTERS(Dim_Scenario),
+			    Dim_Scenario[ScenarioCode] = "Budget"
+			)
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		displayFolder: B. Actual vs Budget
+		lineageTag: aebae1f7-6852-408b-9165-bad60cc0cf00
+
+	measure 'RWA Variance' =
+			
+			VAR ActualValue = [RWA Actual]
+			VAR BudgetValue = [RWA Budget]
+			RETURN
+			    IF(
+			        ISBLANK(ActualValue)
+			            || ISBLANK(BudgetValue),
+			        BLANK(),
+			        ActualValue - BudgetValue
+			    )
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		displayFolder: B. Actual vs Budget
+		lineageTag: 68de19fa-d140-4027-a3c4-eb3b20acb9e5
+
+	measure 'RWA Variance (%)' =
+			
+			DIVIDE(
+			    [RWA Variance],
+			    [RWA Budget]
+			)
+		displayFolder: B. Actual vs Budget
+		lineageTag: 133feef2-453c-4adf-bdef-6a1abbadb7ef
+
+		formatStringDefinition = "+0.00%;-0.00%;0.00%"
+
+	measure 'RWA Prior Month' =
+			
+			VAR PriorMonthEnd =
+			    EOMONTH(
+			        MAX(Dim_Date[Date]),
+			        -1
+			    )
+			RETURN
+			    CALCULATE(
+			        [Total RWA],
+			        REMOVEFILTERS(Dim_Date),
+			        Dim_Date[MonthEnd] = PriorMonthEnd
+			    )
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		displayFolder: C. Previous month and MoM
+		lineageTag: ec36a6b9-1d4c-4082-9ba2-95ea7f08e1bf
+
+	measure 'RWA MoM (%)' =
+			
+			VAR CurrentRWA = [Total RWA]
+			VAR PreviousRWA = [RWA Prior Month]
+			RETURN
+			    IF(
+			        ISBLANK(CurrentRWA),
+			        BLANK(),
+			        DIVIDE(
+			            CurrentRWA - PreviousRWA,
+			            PreviousRWA
+			        )
+			    )
+		displayFolder: C. Previous month and MoM
+		lineageTag: 9694ccf6-fa4c-4b0e-8b00-08949f22ed43
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'RWA Rolling 3M Avg' = ```
+			
+			VAR EndMonth =
+			    EOMONTH(MAX(Dim_Date[Date]), 0)
+			
+			VAR StartDate =
+			    EOMONTH(EndMonth, -3) + 1
+			
+			VAR MonthsInWindow =
+			    CALCULATETABLE(
+			        VALUES(Dim_Date[MonthEnd]),
+			        REMOVEFILTERS(Dim_Date),
+			        DATESBETWEEN(
+			            Dim_Date[Date],
+			            StartDate,
+			            EndMonth
+			        )
+			    )
+			
+			VAR MonthlyActuals =
+			    ADDCOLUMNS(
+			        MonthsInWindow,
+			        "@ActualRWA",
+			            VAR CurrentMonth = Dim_Date[MonthEnd]
+			            RETURN
+			                CALCULATE(
+			                    [RWA Actual],
+			                    REMOVEFILTERS(Dim_Date),
+			                    Dim_Date[MonthEnd] = CurrentMonth
+			                )
+			    )
+			
+			RETURN
+			    AVERAGEX(
+			        FILTER(
+			            MonthlyActuals,
+			            NOT ISBLANK([@ActualRWA])
+			        ),
+			        [@ActualRWA]
+			    )
+			
+			```
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		displayFolder: D. Rolling Avg
+		lineageTag: 2b53cf7d-af19-44b9-b8ad-59b5d8a600ee
+
+	measure 'RWA Rolling 3M Months Used' = ```
+			
+			VAR EndMonth =
+			    EOMONTH(MAX(Dim_Date[Date]), 0)
+			
+			VAR StartDate =
+			    EOMONTH(EndMonth, -3) + 1
+			
+			VAR MonthsInWindow =
+			    CALCULATETABLE(
+			        VALUES(Dim_Date[MonthEnd]),
+			        REMOVEFILTERS(Dim_Date),
+			        DATESBETWEEN(
+			            Dim_Date[Date],
+			            StartDate,
+			            EndMonth
+			        )
+			    )
+			
+			VAR MonthlyActuals =
+			    ADDCOLUMNS(
+			        MonthsInWindow,
+			        "@ActualRWA",
+			            VAR CurrentMonth = Dim_Date[MonthEnd]
+			            RETURN
+			                CALCULATE(
+			                    [RWA Actual],
+			                    REMOVEFILTERS(Dim_Date),
+			                    Dim_Date[MonthEnd] = CurrentMonth
+			                )
+			    )
+			
+			RETURN
+			    COUNTROWS(
+			        FILTER(
+			            MonthlyActuals,
+			            NOT ISBLANK([@ActualRWA])
+			        )
+			    )
+			
+			```
+		formatString: 0
+		displayFolder: D. Rolling Avg
+		lineageTag: d5243bc0-ec3b-4dfa-b78f-68151a13d8c3
+
+	measure 'Variance Color' = if ([RWA Variance]< 0, 1, 2)
+		formatString: 0
+		displayFolder: B. Actual vs Budget
+		lineageTag: f3622cda-9904-439a-b494-10aed2963f6e
+
+	measure 'Exposure Row Count' = ```
+			
+			COUNTROWS(Fact_Exposure)
+			
+			```
+		formatString: 0
+		displayFolder: E. Data Quality
+		lineageTag: a9f04c69-5f3f-4d60-b6ef-46b9898932b2
+
+	measure 'Total Capital Requirement' =
+			
+			SUM(Fact_Exposure[CapitalRequirement])
+		formatString: 0
+		displayFolder: E. Data Quality
+		lineageTag: ca2ef95b-8549-430c-8d17-c603aa18f6b2
+
+	measure 'Data Quality Exception Rows' = ```
+			
+			CALCULATE(
+			    COUNTROWS(Fact_Exposure),
+			    Fact_Exposure[DQ_Status] <> "OK"
+			)
+			
+			
+			```
+		formatString: 0
+		displayFolder: E. Data Quality
+		lineageTag: 49cda1df-9d4e-412b-8c67-464c06f6fb50
+
+	measure 'Unknown Counterparty Rows' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_Exposure),
+			    Fact_Exposure[CounterpartyID] = "CP011"
+			)
+		formatString: 0
+		displayFolder: E. Data Quality
+		lineageTag: bee331d2-597b-4b2b-bd3d-22daab358948
+
+	measure 'Missing RWA Rows' =
+			
+			CALCULATE(
+			    COUNTROWS(Fact_Exposure),
+			    ISBLANK(Fact_Exposure[RWA])
+			)
+		formatString: 0
+		displayFolder: E. Data Quality
+		lineageTag: 43616aea-bfb7-43ca-ae9f-617f6417f127
+
+	measure 'Max Value' = ```
+			
+			if(
+			    [RWA Actual] > [RWA Budget], 
+			    [RWA Actual], 
+			    [RWA Budget])
+			```
+		formatString: "€"\ #,0.00;-"€"\ #,0.00;"€"\ #,0.00
+		displayFolder: B. Actual vs Budget
+		lineageTag: bf7da56b-2345-4b31-a3ee-94bc887b1dea
+
+	measure Green = If ([RWA Variance] > 0, [Max Value])
+		formatString: "Rs"#,0.###############;-"Rs"#,0.###############;"Rs"#,0.###############
+		displayFolder: B. Actual vs Budget
+		lineageTag: d289ec48-02d0-45ca-9730-6ab874e17288
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-PK"}
+
+	measure Red = If ([RWA Variance] < 0, [Max Value])
+		formatString: "Rs"#,0.###############;-"Rs"#,0.###############;"Rs"#,0.###############
+		displayFolder: B. Actual vs Budget
+		lineageTag: 4bbff179-bc73-4c97-885a-d3409418eb75
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-PK"}
+
+	measure 'RWA Variance_bar' =
+			
+			VAR ActualValue = [RWA Actual]
+			VAR BudgetValue = [RWA Budget]
+			RETURN
+			    IF(
+			        ISBLANK(ActualValue)
+			            || ISBLANK(BudgetValue),
+			        BLANK(),
+			        ActualValue - BudgetValue
+			    )
+		formatString: "Rs"#,0.###############;-"Rs"#,0.###############;"Rs"#,0.###############
+		displayFolder: B. Actual vs Budget
+		lineageTag: 35d79165-3631-428a-a990-a6b3d8e885e6
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-PK"}
+
+	column Column1
+		dataType: string
+		isHidden
+		lineageTag: 32d930cb-4634-4e2b-89eb-fc5254ffc75a
+		summarizeBy: none
+		sourceColumn: Column1
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = m
+		mode: import
+		queryGroup: 03_Reporting_Model
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "31baae93cc55189939e2",
+  "displayName": "Exposure Detail",
+  "displayOption": "FitToPage",
+  "height": 1180,
+  "width": 1920,
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "3d41f50024c9a1b00084",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Dim_Country"
+              }
+            },
+            "Property": "CountryName"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "c6864a36ea87ee063b98",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Dim_Segment"
+              }
+            },
+            "Property": "SegmentName"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      }
+    ]
+  },
+  "pageBinding": {
+    "name": "9f32fdd604cdad94837c",
+    "type": "Drillthrough",
+    "parameters": [
+      {
+        "name": "a9408317698e040e9c88",
+        "boundFilter": "3d41f50024c9a1b00084",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Dim_Country"
+              }
+            },
+            "Property": "CountryName"
+          }
+        }
+      },
+      {
+        "name": "2c74ec7fb12dacba3d48",
+        "boundFilter": "c6864a36ea87ee063b98",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Dim_Segment"
+              }
+            },
+            "Property": "SegmentName"
+          }
+        }
+      }
+    ]
+  },
+  "visibility": "HiddenInViewMode"
+}

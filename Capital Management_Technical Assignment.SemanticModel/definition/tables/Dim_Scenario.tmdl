@@ -1,0 +1,45 @@
+table Dim_Scenario
+	lineageTag: 97b2e633-7434-45f9-90b7-21244f576219
+
+	column ScenarioCode
+		dataType: string
+		lineageTag: 07de9fc7-faa0-4765-bc0c-62fc921c2754
+		summarizeBy: none
+		sourceColumn: ScenarioCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column ScenarioName
+		dataType: string
+		lineageTag: 59364c3f-9c16-42ff-8391-e99c0f027302
+		summarizeBy: none
+		sourceColumn: ScenarioName
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		lineageTag: 0c2d9db3-857c-47d9-ba5d-919bd91a8f55
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_Scenario = m
+		mode: import
+		queryGroup: 03_Reporting_Model
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\samis\Downloads\Nordea\Dim_Scenario.csv"),[Delimiter=",", Columns=3, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}, {"Column2", type text}, {"Column3", type text}}),
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"ScenarioCode", type text}, {"ScenarioName", type text}, {"Description", type text}}),
+				    // removed whitespace from ScenarioCode
+				    #"Trimmed Text" = Table.TransformColumns(#"Changed Type1",{{"ScenarioCode", Text.Trim, type text}})
+				in
+				    #"Trimmed Text"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

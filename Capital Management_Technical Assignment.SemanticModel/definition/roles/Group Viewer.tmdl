@@ -1,0 +1,5 @@
+role 'Group Viewer'
+	modelPermission: read
+
+	annotation PBI_Id = 6bde03a6323342dc9eba328cfe70ef19
+

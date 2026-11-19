@@ -1,0 +1,41 @@
+model Model
+	culture: en-GB
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-PK
+	valueFilterBehavior: independent
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+queryGroup 02_Data_Quality_Validation
+
+	annotation PBI_QueryGroupOrder = 1
+
+queryGroup 01_Raw_Data
+
+	annotation PBI_QueryGroupOrder = 0
+
+queryGroup 03_Reporting_Model
+
+	annotation PBI_QueryGroupOrder = 2
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_QueryOrder = ["Dim_Country","Dim_Segment","Dim_Counterparty","Dim_Scenario","Security_UserCountry","Fact_Exposure_Raw","Fact_Exposure","Dim_Date","_Measures","DQ_01_DuplicateExposures","DQ_02_MissingFinancialValues","DQ_03_UnknownCounterparties","Dim_Counterparty_Raw","DQ_04_CurrencyFormatting"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table Dim_Country
+ref table Dim_Segment
+ref table Dim_Counterparty
+ref table Dim_Scenario
+ref table Security_UserCountry
+ref table Fact_Exposure
+ref table Dim_Date
+ref table _Measures
+
+ref role 'Country Manager'
+ref role 'Group Viewer'
+
+ref cultureInfo en-GB
+

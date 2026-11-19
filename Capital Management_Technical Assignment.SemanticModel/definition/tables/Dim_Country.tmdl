@@ -1,0 +1,51 @@
+table Dim_Country
+	lineageTag: 4644d1ed-de94-4000-bf4b-47b38f9cc86e
+
+	column CountryCode
+		dataType: string
+		lineageTag: 50de1a30-48df-4539-a6b0-ee9aa9810110
+		summarizeBy: none
+		sourceColumn: CountryCode
+
+		annotation SummarizationSetBy = Automatic
+
+	column CountryName
+		dataType: string
+		lineageTag: 27b0f2a2-9a70-4b5d-ad52-a961f3527a32
+		summarizeBy: none
+		sourceColumn: CountryName
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: f2733e85-aea5-4d5f-80ee-fa5c78719ca6
+		summarizeBy: none
+		sourceColumn: Region
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_Country = m
+		mode: import
+		queryGroup: 03_Reporting_Model
+		source =
+				let
+				    Source = Csv.Document(File.Contents("C:\Users\samis\Downloads\Nordea\Dim_Country.csv"),[Delimiter=",", Columns=3, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    #"Changed Type" = Table.TransformColumnTypes(
+				    Source,
+				    {
+				        {"Column1", type text},
+				        {"Column2", type text},
+				        {"Column3", type text}
+				    }
+				),
+				    #"Promoted Headers" = Table.PromoteHeaders(#"Changed Type", [PromoteAllScalars=true]),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Promoted Headers",{{"CountryCode", type text}, {"CountryName", type text}, {"Region", type text}}),
+				    #"Trimmed Text" = Table.TransformColumns(#"Changed Type1",{{"CountryCode", Text.Trim, type text}})
+				in
+				    #"Trimmed Text"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

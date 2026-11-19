@@ -1,0 +1,24 @@
+relationship AutoDetected_7a23a143-2522-4b79-bc5f-85019352804f
+	fromColumn: Security_UserCountry.CountryCode
+	toColumn: Dim_Country.CountryCode
+
+relationship AutoDetected_d09bbf44-02da-475c-a0de-37fc1378f4c3
+	fromColumn: Fact_Exposure.CountryCode
+	toColumn: Dim_Country.CountryCode
+
+relationship AutoDetected_bce7bd5f-38e3-48f7-920f-687d9691ae12
+	fromColumn: Fact_Exposure.SegmentCode
+	toColumn: Dim_Segment.SegmentCode
+
+relationship AutoDetected_9ff45567-1330-4299-96f8-83e8c83ef673
+	fromColumn: Fact_Exposure.CounterpartyID
+	toColumn: Dim_Counterparty.CounterpartyID
+
+relationship AutoDetected_c16b13d5-9fec-490f-b851-20c58d80911a
+	fromColumn: Fact_Exposure.ScenarioCode
+	toColumn: Dim_Scenario.ScenarioCode
+
+relationship 9daeeb28-4bc9-90ce-4246-d6832a3ef5e3
+	fromColumn: Fact_Exposure.ReportMonth
+	toColumn: Dim_Date.Date
+

@@ -1,0 +1,18 @@
+role 'Country Manager'
+	modelPermission: read
+
+	tablePermission Dim_Country =
+			Dim_Country[CountryCode]
+			    IN
+			    SELECTCOLUMNS(
+			        FILTER(
+			            ALL(Security_UserCountry),
+			            Security_UserCountry[UserEmail]
+			                = LOWER(USERPRINCIPALNAME())
+			        ),
+			        "AllowedCountry",
+			        Security_UserCountry[CountryCode]
+			    )
+
+	annotation PBI_Id = 17859738780c4569a5fdbf98dbb63c84
+

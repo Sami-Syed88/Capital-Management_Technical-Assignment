@@ -1,0 +1,171 @@
+table Dim_Date
+	lineageTag: 11c94fc5-64cd-4d45-aee7-60bb460e426a
+	dataCategory: Time
+
+	column Date
+		dataType: dateTime
+		isKey
+		formatString: Long Date
+		lineageTag: 384d49f9-f92b-4fce-8edf-0279a636bb15
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Year
+		dataType: int64
+		formatString: 0
+		lineageTag: 39ec3346-8e5a-4fac-a857-d3f4bc6b17da
+		summarizeBy: none
+		sourceColumn: Year
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthNumber
+		dataType: int64
+		formatString: 0
+		lineageTag: 64371a1b-e5c0-41b7-94f9-9f580f3f5a71
+		summarizeBy: none
+		sourceColumn: MonthNumber
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthName
+		dataType: string
+		lineageTag: e5720eb6-b0d1-4215-b796-b9ca6227a77b
+		summarizeBy: none
+		sourceColumn: MonthName
+		sortByColumn: MonthNumber
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthYear
+		dataType: string
+		lineageTag: 172e19b0-776a-4b6d-b900-675d620a3079
+		summarizeBy: none
+		sourceColumn: MonthYear
+		sortByColumn: YearMonth
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column YearMonth
+		dataType: int64
+		formatString: 0
+		lineageTag: b14676b4-8de4-41da-b7b3-083f7e8b14ca
+		summarizeBy: none
+		sourceColumn: YearMonth
+
+		annotation SummarizationSetBy = Automatic
+
+	column MonthStart
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: b732cf83-8327-4653-a1d9-1d1cd36fdd42
+		summarizeBy: none
+		sourceColumn: MonthStart
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column MonthEnd
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 45a12709-8b31-47e4-877b-70fb3160a5e6
+		summarizeBy: none
+		sourceColumn: MonthEnd
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Quarter
+		dataType: string
+		lineageTag: b74734f8-05b1-4fb9-863d-e22dd3de8379
+		summarizeBy: none
+		sourceColumn: Quarter
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Dim_Date = m
+		mode: import
+		queryGroup: 03_Reporting_Model
+		source =
+				let
+				    StartDate = #date(2026, 1, 1),
+				    EndDate   = #date(2026, 12, 31),
+				
+				    DateList = List.Dates(
+				        StartDate,
+				        Duration.Days(EndDate - StartDate) + 1,
+				        #duration(1, 0, 0, 0)
+				    ),
+				
+				    Source = Table.FromList(
+				        DateList,
+				        Splitter.SplitByNothing(),
+				        {"Date"}
+				    ),
+				
+				    ChangedType = Table.TransformColumnTypes(
+				        Source,
+				        {{"Date", type date}}
+				    ),
+				
+				    AddYear = Table.AddColumn(
+				        ChangedType, "Year",
+				        each Date.Year([Date]), Int64.Type
+				    ),
+				
+				    AddMonthNumber = Table.AddColumn(
+				        AddYear, "MonthNumber",
+				        each Date.Month([Date]), Int64.Type
+				    ),
+				
+				    AddMonthName = Table.AddColumn(
+				        AddMonthNumber, "MonthName",
+				        each Date.ToText([Date], "MMM", "en-US"),
+				        type text
+				    ),
+				
+				    AddMonthYear = Table.AddColumn(
+				        AddMonthName, "MonthYear",
+				        each Date.ToText([Date], "MMM yyyy", "en-US"),
+				        type text
+				    ),
+				
+				    AddYearMonth = Table.AddColumn(
+				        AddMonthYear, "YearMonth",
+				        each Date.Year([Date]) * 100 + Date.Month([Date]),
+				        Int64.Type
+				    ),
+				
+				    AddMonthStart = Table.AddColumn(
+				        AddYearMonth, "MonthStart",
+				        each Date.StartOfMonth([Date]), type date
+				    ),
+				
+				    AddMonthEnd = Table.AddColumn(
+				        AddMonthStart, "MonthEnd",
+				        each Date.EndOfMonth([Date]), type date
+				    ),
+				
+				    AddQuarter = Table.AddColumn(
+				        AddMonthEnd, "Quarter",
+				        each "Q" & Text.From(Date.QuarterOfYear([Date])),
+				        type text
+				    )
+				
+				in
+				    AddQuarter
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

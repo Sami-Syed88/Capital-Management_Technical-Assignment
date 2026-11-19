@@ -1,0 +1,193 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "90f87b7bcd61139510a0",
+  "position": {
+    "x": 63.5966063473873,
+    "y": 99.937524260180041,
+    "z": 1000,
+    "height": 1058.4292342100887,
+    "width": 1757.9919040313489,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": ""
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Data issues found and handled",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "I loaded the six supplied CSV files using Power Query. Identified and removed one verified identical duplicate (EXP-0021), reducing the fact_exposure dataset from 49 to 48 records. Standardized text fields and currency codes, and converted text-formatted monetary values into numeric types.",
+                    "textStyle": {
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "One exposure (EXP-0011) has missing RWA and CapitalRequirement values. These were retained as blanks and flagged rather than estimated. Counterparty CP011 is absent from the master data, so a provisional dimension record named \"Unknown counterparty\" was added using the Poland country code shown in the source fact_exposure.",
+                    "textStyle": {
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Model and key assumptions",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Implemented a star schema with five dimensions, a daily 2026 date table, and single-direction relationships to Fact_Exposure. All monetary values were treated as EUR, with no further currency conversion as mentioned in additional requirement at point # 3. Capital requirement includes an additional 2.5% of RWA buffer in the separately defined buffer measure. The original Capital Requirement % calculation remains unchanged.",
+                    "textStyle": {
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Actual and Budget measures override scenario selection for comparison. Variances remain blank where either scenario is unavailable. The rolling three-month average uses only months containing Actual RWA data as required.",
+                    "textStyle": {
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "RLS Implementation and validation",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Implemented dynamic Country Manager RLS through user-to-country mappings and a separate unrestricted Group Viewer role. Validation is performed using the supplied test users and Power BI Desktop's View as feature, with Service-level testing required before production use.",
+                    "textStyle": {
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Known limitations",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "The February Actual RWA is incomplete because of one missing value, affecting related KPIs and variances. CP011 has incomplete master data. The provided dataset contains only a limited set of reporting months, and the security emails provided are just sample for the the demonstration.",
+                    "textStyle": {
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Production improvements",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "For production, I would collaborate closely with the Data Engineering team to ensure that data validation, exception logging, source reconciliation, and counterparty master data management are handled upstream.",
+                    "textStyle": {
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "From my side as a Power BI Developer, I would focus on building a governed, reusable semantic model, implementing appropriate RLS and managing access through security groups. I would use Git integration with Azure DevOps for version control and Power BI/Fabric deployment pipelines to promote changes across Development, Test, and Production environments.",
+                    "textStyle": {
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "I would also evaluate incremental refresh and model optimization based on data volume and performance requirements to ensure a reliable, secure, and maintainable reporting solution.",
+                    "textStyle": {
+                      "fontSize": "20pt"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "padding": [
+        {
+          "properties": {
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
